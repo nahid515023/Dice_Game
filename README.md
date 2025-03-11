@@ -73,10 +73,12 @@ During gameplay, enter `?` to display win probabilities:
 ### ✅ Valid Run
 ```sh
 dotnet run 2,2,4,4,9,9 1,1,6,6,8,8 3,3,5,5,7,7
+dotnet run 1,2,3,4,5,6 1,2,3,4,5,6 1,2,3,4,5,6 1,2,3,4,5,6
 ```
 
 ### ❌ Invalid Input Handling
 ```sh
+dotnet run 
 dotnet run 2,2,4,4,9,9 1,1,6,6,8,8  # ❌ Error: At least 3 dice are required.
 dotnet run 2,2,X,X,9,9 1,1,6,6,8,8 3,3,5,5,7,7  # ❌ Error: Invalid integer in dice config.
 ```
