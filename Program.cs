@@ -84,6 +84,7 @@ class FairRandomProtocol
 
 class ProbabilityCalculator
 {
+    // Returns the probability that diceA wins over diceB
     public static double CalculateProbability(Dice diceA, Dice diceB)
     {
         int count = 0, total = diceA.GetSides() * diceB.GetSides();
@@ -113,14 +114,30 @@ class GameEngine
         var protocol = new FairRandomProtocol(2);
         Console.WriteLine($"I selected a random value in the range 0..1 (HMAC={protocol.GetHmac()}).");
 
-        Console.WriteLine("Try to guess my selection (0/1): ");
+        Console.WriteLine("Try to guess my selection: ");
+        Console.WriteLine("0 - 0");
+        Console.WriteLine("1 - 1");
+        Console.WriteLine("X - exit");
+        Console.WriteLine("? - help");
+
         string input;
+
         while (true)
         {
             input = Console.ReadLine()?.Trim() ?? string.Empty;
+            if (input.Equals("X", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Exiting game.");
+                Environment.Exit(0);
+            }
+            if (input == "?")
+            {
+                DisplayHelp();
+                continue;
+            }
             if (input == "0" || input == "1")
                 break;
-            Console.WriteLine("Invalid input. Enter 0 or 1.");
+            Console.WriteLine("Invalid input. Enter 0 or 1 (or X to exit, ? for help).");
         }
 
         int userGuess = int.Parse(input);
@@ -133,9 +150,10 @@ class GameEngine
         if (userGoesFirst)
         {
             Console.WriteLine("Choose your dice:");
-            PrintDiceOptions();
-            int choice = GetValidDiceChoice();
-            userDice = _diceArray[choice];
+            var availableIndices = Enumerable.Range(0, _diceArray.Count).ToList();
+            PrintDiceOptions(availableIndices);
+            int choice = GetValidDiceChoice(availableIndices.Count);
+            userDice = _diceArray[availableIndices[choice]];
             computerDice = _diceArray.First(d => d != userDice);
         }
         else
@@ -144,9 +162,10 @@ class GameEngine
             computerDice = _diceArray[compChoice];
             Console.WriteLine($"I choose the [{string.Join(",", computerDice.Faces)}] dice.");
             Console.WriteLine("Choose your dice:");
-            PrintDiceOptions(computerDice);
-            int choice = GetValidDiceChoice();
-            userDice = _diceArray[choice];
+            var availableIndices = GetAvailableDiceIndices(computerDice);
+            PrintDiceOptions(availableIndices);
+            int choice = GetValidDiceChoice(availableIndices.Count);
+            userDice = _diceArray[availableIndices[choice]];
         }
 
         Console.WriteLine("It's time for my throw.");
@@ -162,26 +181,46 @@ class GameEngine
                           $"It's a tie ({userThrow} = {compThrow})!");
     }
 
-    private void PrintDiceOptions(Dice? exclude = null)
+    private List<int> GetAvailableDiceIndices(Dice exclude)
     {
-        int x=0;
+        List<int> indices = new List<int>();
         for (int i = 0; i < _diceArray.Count; i++)
         {
             if (_diceArray[i] != exclude)
-                {
-                    Console.WriteLine($"{x} - [{string.Join(",", _diceArray[i].Faces)}]");
-                    x++;
-                }
+                indices.Add(i);
         }
+        return indices;
     }
 
-    private int GetValidDiceChoice()
+    private void PrintDiceOptions(List<int> indices)
+    {
+        for (int j = 0; j < indices.Count; j++)
+        {
+            int i = indices[j];
+            Console.WriteLine($"{j} - [{string.Join(",", _diceArray[i].Faces)}]");
+        }
+        Console.WriteLine("X - exit");
+        Console.WriteLine("? - help");
+    }
+
+    private int GetValidDiceChoice(int maxChoice)
     {
         while (true)
         {
-            if (int.TryParse(Console.ReadLine(), out int choice) && choice >= 0 && choice < _diceArray.Count)
+            string line = Console.ReadLine()?.Trim() ?? string.Empty;
+            if (line.Equals("X", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Exiting game.");
+                Environment.Exit(0);
+            }
+            if (line == "?")
+            {
+                DisplayHelp();
+                continue;
+            }
+            if (int.TryParse(line, out int choice) && choice >= 0 && choice < maxChoice)
                 return choice;
-            Console.WriteLine("Invalid selection. Try again.");
+            Console.WriteLine($"Invalid selection. Enter a number between 0 and {maxChoice - 1} (or X to exit, ? for help).");
         }
     }
 
@@ -190,12 +229,31 @@ class GameEngine
         int sides = dice.GetSides();
         var protocol = new FairRandomProtocol(sides);
         Console.WriteLine($"I selected a random value in range 0..{sides - 1} (HMAC={protocol.GetHmac()}).");
-        Console.WriteLine($"Enter a number (0-{sides - 1}): ");
+        Console.WriteLine($"Add your number modulo 6.");
+        for(int i = 0; i < sides; i++)
+        {
+            Console.WriteLine($"{i} - {i}");
+        }
+        Console.WriteLine("X - exit");
+        Console.WriteLine("? - help");
 
         int userNum;
-        while (!int.TryParse(Console.ReadLine(), out userNum) || userNum < 0 || userNum >= sides)
+        while (true)
         {
-            Console.WriteLine($"Invalid input. Enter a number between 0 and {sides - 1}.");
+            string line = Console.ReadLine()?.Trim() ?? string.Empty;
+            if (line.Equals("X", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Exiting game.");
+                Environment.Exit(0);
+            }
+            if (line == "?")
+            {
+                DisplayHelp();
+                continue;
+            }
+            if (int.TryParse(line, out userNum) && userNum >= 0 && userNum < sides)
+                break;
+            Console.WriteLine($"Invalid input. Enter a number between 0 and {sides - 1} (or X to exit, ? for help).");
         }
 
         var reveal = protocol.Reveal();
@@ -203,6 +261,98 @@ class GameEngine
         int resultIndex = (reveal.Value + userNum) % sides;
         Console.WriteLine($"Result: {reveal.Value} + {userNum} = {resultIndex} (mod {sides})");
         return dice.GetFace(resultIndex);
+    }
+
+    private void DisplayHelp()
+    {
+        Console.WriteLine("\nHelp - Dice Game Rules:");
+        Console.WriteLine("1. At the start, guess 0 or 1 to decide who goes first.");
+        Console.WriteLine("2. You cannot choose the same dice as the opponent.");
+        Console.WriteLine("3. During throws, enter a valid number within the specified range.");
+        Console.WriteLine("4. At any prompt, type 'X' to exit the game or '?' to display this help message again.\n");
+        Console.WriteLine("Probability of the win for the user:");
+        Console.WriteLine(DisplayProbabilityTable());
+    }
+
+    private string DisplayProbabilityTable()
+    {
+        List<List<string>> rows = new List<List<string>>();
+        List<string> header = new List<string>();
+        header.Add("User dice v");
+        foreach (var dice in _diceArray)
+            header.Add(string.Join(",", dice.Faces));
+        rows.Add(header);
+
+        for (int i = 0; i < _diceArray.Count; i++)
+        {
+            List<string> row = new List<string>();
+            string config = string.Join(",", _diceArray[i].Faces);
+            row.Add(config);
+            for (int j = 0; j < _diceArray.Count; j++)
+            {
+                if (i == j)
+                    row.Add("-");
+                else
+                {
+                    double prob = ProbabilityCalculator.CalculateProbability(_diceArray[i], _diceArray[j]);
+                    row.Add(prob.ToString("0.0000"));
+                }
+            }
+            rows.Add(row);
+        }
+
+        int colCount = rows[0].Count;
+        int[] colWidths = new int[colCount];
+        for (int j = 0; j < colCount; j++)
+        {
+            int maxWidth = 0;
+            foreach (var row in rows)
+            {
+                if (row[j].Length > maxWidth)
+                    maxWidth = row[j].Length;
+            }
+            colWidths[j] = maxWidth;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        string separator = BuildSeparator(colWidths);
+        sb.AppendLine(separator);
+        sb.AppendLine(BuildRow(rows[0], colWidths, isHeader: true));
+        sb.AppendLine(separator);
+        for (int i = 1; i < rows.Count; i++)
+        {
+            sb.AppendLine(BuildRow(rows[i], colWidths, isHeader: false));
+            sb.AppendLine(separator);
+        }
+        return sb.ToString();
+    }
+
+    private string BuildRow(List<string> row, int[] colWidths, bool isHeader)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append("|");
+        for (int j = 0; j < row.Count; j++)
+        {
+            string cell = row[j].PadRight(colWidths[j]);
+            if (isHeader)
+            {
+                cell = "\x1b[36m" + cell + "\x1b[0m";
+            }
+            sb.Append(" " + cell + " |");
+        }
+        return sb.ToString();
+    }
+
+    private string BuildSeparator(int[] colWidths)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append("+");
+        foreach (int w in colWidths)
+        {
+            sb.Append(new string('-', w + 2));
+            sb.Append("+");
+        }
+        return sb.ToString();
     }
 }
 
