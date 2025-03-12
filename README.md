@@ -88,8 +88,4 @@ dotnet run 2,2,X,X,9,9 1,1,6,6,8,8 3,3,5,5,7,7  # ❌ Error: Invalid integer in 
 ## 📞 Contact
 - **Developer:** Md Nahid Hasan  
 - **GitHub:** [nahid515023](https://github.com/nahid515023)  
-<<<<<<< HEAD
 - **Email:** nahid515023@gmail.com  
-=======
-- **Email:** nahid515023@gmail.com  
->>>>>>> e7a2b10 (Add README.md with project overview, features, installation instructions, and gameplay details)
