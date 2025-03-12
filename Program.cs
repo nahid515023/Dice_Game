@@ -164,10 +164,14 @@ class GameEngine
 
     private void PrintDiceOptions(Dice? exclude = null)
     {
+        int x=0;
         for (int i = 0; i < _diceArray.Count; i++)
         {
             if (_diceArray[i] != exclude)
-                Console.WriteLine($"{i} - [{string.Join(",", _diceArray[i].Faces)}]");
+                {
+                    Console.WriteLine($"{x} - [{string.Join(",", _diceArray[i].Faces)}]");
+                    x++;
+                }
         }
     }
 
